@@ -6,6 +6,19 @@ use File::Copy;
 
 find( \&filecheck, "." );
 
+eval( 'use DB_File' );
+if ( !$@ ) { makeDbs() }
+else { print <<WARNING; exit(0); }
+
+DB_File not installed, so we can't build East Asian character
+database. This is BAD if you want to work with EastAsian character 
+data. DB_File is used to lower the memory footprint of MARC::Charset when 
+working with EastAsian character data. Please install DB_File available from 
+you nearest CPAN mirror. 
+
+WARNING
+
+
 sub filecheck {
 	unlink if /~$/;	# Remove any vi backup files
 	die "Aborting: Swapfile $_ found" if /\.swp$/;
@@ -43,17 +56,6 @@ sub filecheck {
 ## The idea here was to make it easy to extend this code if we wanted
 ## to use Berkeley DBs for other character lookups. But it's just East
 ## Asian at the moment.
-
-eval( 'use DB_File' );
-if ( !$@ ) { makeDbs() }
-else { print <<WARNING; }
-
-DB_FILE not installed, so we can't build East Asian character
-database. This is BAD if you want to work with EastAsian character 
-data. If you don't want to support EastAsian characters, you can continue
-to install if you like. Otherwise install DB_File available on CPAN.
-
-WARNING
 
 sub makeDbs {
     foreach my $db ( 'EastAsian' ) {

@@ -8,7 +8,7 @@ BEGIN: {
     use MARC::Charset qw(:all);
 }
 
-plan tests => 15742;
+plan tests => 15741;
 
 my $c = MARC::Charset->new();
 isa_ok( $c, 'MARC::Charset' );

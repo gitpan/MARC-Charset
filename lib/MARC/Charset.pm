@@ -10,7 +10,7 @@ use 5.8.0;
 use strict;
 use base qw( Exporter );
 
-our $VERSION = 0.3;
+our $VERSION = 0.4;
 
 =head1 SYNOPSIS
 
@@ -196,7 +196,7 @@ sub new {
 Pass to_utf8() a string of MARC8 encoded characters and get back a string
 of UTF8 characters. to_utf8() will handle escape sequences within the string 
 that change the working character sets to Greek, Hebrew, Arabic (Basic + 
-Extended), Cyrillic (Basic + Extended)...but not 32 bit East Asian (see TODO).
+Extended), Cyrillic (Basic + Extended), and East Asian. 
 
 =cut
 
@@ -254,16 +254,6 @@ sub g1 {
 =item * to_marc8()
 
 A function for going from Unicode to MARC-8 character encodings.
-
-=item * Support for 32bit MARC-8 characters: 
-
-This concerns the East Asian character sets: Han, Hiragana, Katakana, Hangul 
-and Punctuation. I'm a bit confused about whether 7/8 bit character sets can 
-interoperate with 32 bit character sets. For example if ASCII is designated as 
-the working G0 character set, and East Asian as the working G1 character set. 
-While I've tried to program towards supporting 32 bit character sets I need to 
-know exactly how they are implemented in the 'real world'. So if you have 
-any East Asian MARC data please email it to me!!
 
 =back
 
