@@ -13,7 +13,7 @@ use DB_File;
 use MARC::Charset::Generic qw( :all );
 use Carp qw( croak );
 
-our $VERSION = 0.5;
+our $VERSION = 0.6;
 
 =head1 SYNOPSIS
 
@@ -218,7 +218,7 @@ sub to_utf8 {
 
 }
 
-=head1 to_marc8()
+=head2 to_marc8()
 
 When you pass this method a UTF8 string you will be returned a MARC8 encoded
 string. to_marc8() handles creating the appropriate character escapes.
