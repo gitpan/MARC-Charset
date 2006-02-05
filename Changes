@@ -1,5 +1,13 @@
 Revision history for MARC::Charset
 
+0.92 Sat Feb  4 19:34:19 CST 2006
+     - marc8_to_utf8 and utf8_to_marc8 needed to pass along spaces 
+       without translation
+     - added tests to t/escape2.t and t/utf8.t to test space behavior
+
+0.91 Fri Feb  3 23:10:59 EST 2006
+     - fix in marc8_to_utf8 for error reporting when no mapping is found
+
 0.9 Fri Feb  3 22:25:39 EST 2006
     - the utf8->marc8 will prefer the first mapping it runs across in the
       LoC XML mapping table. v0.8 preferred the last mapping found which
@@ -8,6 +16,8 @@ Revision history for MARC::Charset
       this problem.
     - added a test that makes sure punctuation is working properly
       to no_escape.t
+    - modified test of multiple combining characters in utf8.t to 
+      actually test for correct result
 
 0.8 Tue Dec  6 07:10:19 CST 2005
     - complete overhaul to make MARC::Charset use LoC XML mapping table.
