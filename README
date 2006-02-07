@@ -21,7 +21,7 @@ side with the full repertoire of Unicode characters (16-bit).
 Unicode notwithstanding, libraries still have a wealth of data encoded using 
 MARC-8. Yet, some new data formats such as XML require that characters are 
 encoded using Unicode. In order to fascilitate conversion the Library of 
-Congress graciously published character mappings to fascilitate the conversion 
+Congress graciously published character mappings to enable the conversion 
 of MARC-8 data to Unicode. 
 
 MARC::Charset is basically an implementation of the character mappings that 

@@ -1,6 +1,6 @@
 package MARC::Charset;
 
-our $VERSION = '0.92';
+our $VERSION = '0.95';
 use strict;
 use warnings;
 
@@ -95,14 +95,14 @@ sub marc8_to_utf8
         }
 
         my $found;
-	CHARSET_LOOP: foreach my $charset ($G0, $G1) 
+        CHARSET_LOOP: foreach my $charset ($G0, $G1) 
         {
 
             # cjk characters are a string of three chars
-	    my $char_size = $charset eq CJK ? 3 : 1;
+            my $char_size = $charset eq CJK ? 3 : 1;
 
             # extract the next code point to examine
-	    my $chunk = substr($marc8, $index, $char_size);
+            my $chunk = substr($marc8, $index, $char_size);
 
             # look up the character to see if it's in our mapping 
             my $code = $table->lookup_by_marc8($charset, $chunk);
@@ -118,15 +118,16 @@ sub marc8_to_utf8
             if ($code->is_combining())
             {
                 $combining .= $code->char_value();
-	    }
+            }
             else
             {
                 $utf8 .= $code->char_value() . $combining;
+                $combining = '';
             }
 
             $index += $char_size;
             next CHAR_LOOP;
-	}
+        }
 
         if (!$found)
         {
@@ -333,22 +334,22 @@ sub _process_escape
     }
 
     elsif ( $esc_char_1 eq MULTI_G0_A ) {
-	$G0 = $esc_char_2;
+        $G0 = $esc_char_2;
         return $left+3;
     }
 
     elsif ($esc_chars eq MULTI_G0_B 
         and ($left+3 < $right)) 
     {
-	$G0 = substr($$str_ref, $left+3, 1);
-	return $left+4;
+        $G0 = substr($$str_ref, $left+3, 1);
+        return $left+4;
     }
 
     elsif (($esc_chars eq MULTI_G1_A or $esc_chars eq MULTI_G1_B)
         and ($left + 3 < $right)) 
     {
-	$G1 = substr($$str_ref, $left+3, 1);
-	return $left+4;
+        $G1 = substr($$str_ref, $left+3, 1);
+        return $left+4;
     }
 
     # we should never get here
