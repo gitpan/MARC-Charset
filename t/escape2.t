@@ -12,11 +12,11 @@ use MARC::Charset qw(marc8_to_utf8);
 ## test some ASCII & Greek mixed together
 
 my $test = 
-    'this is greek' .                       ## regular ASCII
+    'this is greek' .			    ## regular ASCII
     ESCAPE . SINGLE_G0_A . BASIC_GREEK .    ## set G0 to Greek
-    chr(0x49) .                             ## zeta
+    chr(0x49) .				    ## zeta
     ESCAPE . SINGLE_G0_A . BASIC_LATIN .    ## set GO to ASCII
-    'this is not';                          ## regular ASCII
+    'this is not';			    ## regular ASCII
 
 my $expected = 'this is greek' . chr(0x0396) . 'this is not';
 is(marc8_to_utf8($test), $expected, 'escape type 2 to Greek');
@@ -26,8 +26,8 @@ is(marc8_to_utf8($test), $expected, 'escape type 2 to Greek');
 $test = 
     ESCAPE . SINGLE_G0_A . BASIC_ARABIC .   ## set G0 to ArabicBasic
     ESCAPE . SINGLE_G1_A . EXTENDED_ARABIC. ## set G1 to ArabicExtended
-    chr(0x4d) .                             ## HAH (from Basic)
-    chr(0xBA);                              ## DUL (from Extended)
+    chr(0x4d) .				    ## HAH (from Basic)
+    chr(0xBA);				    ## DUL (from Extended)
 
 $expected = chr(0x062D) . chr(0x068E);
 is(marc8_to_utf8($test), $expected, 'escape type 2 to Basic+Ext Arabic');
@@ -37,10 +37,10 @@ is(marc8_to_utf8($test), $expected, 'escape type 2 to Basic+Ext Arabic');
 $test = 
     ESCAPE . SINGLE_G0_A . BASIC_ARABIC .   ## set G0 to ArabicBasic
     ESCAPE . SINGLE_G1_A . EXTENDED_ARABIC. ## set G1 to ArabicExtended
-    chr(0x47) .                             ## ALEF (Arabic Basic) 
+    chr(0x47) .				    ## ALEF (Arabic Basic) 
     ESCAPE . SINGLE_G0_A . BASIC_HEBREW .   ## replace ArabicBasic with Hebrew
-    chr(0x71) .                             ## SAMEKH (Hebrew)
-    chr(0xE9);                              ## RNOON (ArabicExtended)
+    chr(0x71) .				    ## SAMEKH (Hebrew)
+    chr(0xE9); 				    ## RNOON (ArabicExtended)
 
 $expected = chr(0x0627) . chr(0x05E1) . chr(0x06BB);
 is(marc8_to_utf8($test), $expected, 'escape type 2 Arabic + Hebrew mixed');

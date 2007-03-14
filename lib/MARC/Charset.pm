@@ -1,6 +1,6 @@
 package MARC::Charset;
 
-our $VERSION = '0.95';
+our $VERSION = '0.96';
 use strict;
 use warnings;
 
@@ -8,6 +8,7 @@ use base qw(Exporter);
 our @EXPORT_OK = qw(marc8_to_utf8 utf8_to_marc8);
 
 use Unicode::Normalize;
+use Encode 'decode';
 use MARC::Charset::Table;
 use MARC::Charset::Constants qw(:all);
 
@@ -47,6 +48,72 @@ our $table = MARC::Charset::Table->new();
 our $DEFAULT_G0 = ASCII_DEFAULT; 
 our $DEFAULT_G1 = EXTENDED_LATIN;
 
+=head2 ignore_errors()
+
+Tells MARC::Charset whether or not to ignore all encoding errors, and
+returns the current setting.  This is helepfuli if you have records that
+contain both MARC8 and UNICODE characters.
+
+    my $ignore = MARC::Charset->ignore_errors();
+    
+    MARC::Charset->ignore_errors(1); # ignore errors
+    MARC::Charset->ignore_errors(0); # DO NOT ignore errors
+
+=cut
+
+
+our $_ignore_errors = 0;
+sub ignore_errors {
+	my ($self,$i) = @_;
+	$_ignore_errors = $i if (defined($i));
+	return $_ignore_errors;
+}
+
+
+=head2 assume_unicode()
+
+Tells MARC::Charset whether or not to assume UNICODE when an error is
+encountered in ignore_errors mode and returns the current setting.
+This is helepfuli if you have records that contain both MARC8 and UNICODE
+characters.
+
+    my $setting = MARC::Charset->assume_unicode();
+    
+    MARC::Charset->assume_unicode(1); # assume characters are unicode (utf-8)
+    MARC::Charset->assume_unicode(0); # DO NOT assume characters are unicode
+
+=cut
+
+
+our $_assume = '';
+sub assume_unicode {
+	my ($self,$i) = @_;
+	$_assume = 'utf8' if (defined($i) and $i);
+	return 1 if ($_assume eq 'utf8');
+}
+
+
+=head2 assume_encoding()
+
+Tells MARC::Charset whether or not to assume a specific encoding when an error
+is encountered in ignore_errors mode and returns the current setting.  This
+is helpful if you have records that contain both MARC8 and other characters.
+
+    my $setting = MARC::Charset->assume_encoding();
+    
+    MARC::Charset->assume_encoding('cp850'); # assume characters are cp850
+    MARC::Charset->assume_encoding(''); # DO NOT assume any encoding
+
+=cut
+
+
+sub assume_encoding {
+	my ($self,$i) = @_;
+	$_assume = $i if (defined($i));
+	return $_assume;
+}
+
+
 # place holders for working graphical character sets
 my $G0; 
 my $G1;
@@ -58,9 +125,15 @@ Converts a MARC-8 encoded string to UTF-8.
     my $utf8 = marc8_to_utf8($marc8);
 
 If you'd like to ignore errors pass in a true value as the 2nd 
-parameter:
+parameter or call MARC::Charset->ignore_errors() with a true
+value:
 
     my $utf8 = marc8_to_utf8($marc8, 'ignore-errors');
+
+  or
+  
+    MARC::Charset->ignore_errors(1);
+    my $utf8 = marc8_to_utf8($marc8);
 
 =cut
 
@@ -69,6 +142,8 @@ sub marc8_to_utf8
 {
     my ($marc8, $ignore_errors) = @_;
     reset_charsets();
+
+    $ignore_errors = $_ignore_errors if (!defined($ignore_errors));
 
     # holder for our utf8
     my $utf8 = '';
@@ -95,14 +170,14 @@ sub marc8_to_utf8
         }
 
         my $found;
-        CHARSET_LOOP: foreach my $charset ($G0, $G1) 
+	CHARSET_LOOP: foreach my $charset ($G0, $G1) 
         {
 
             # cjk characters are a string of three chars
-            my $char_size = $charset eq CJK ? 3 : 1;
+	    my $char_size = $charset eq CJK ? 3 : 1;
 
             # extract the next code point to examine
-            my $chunk = substr($marc8, $index, $char_size);
+	    my $chunk = substr($marc8, $index, $char_size);
 
             # look up the character to see if it's in our mapping 
             my $code = $table->lookup_by_marc8($charset, $chunk);
@@ -118,7 +193,7 @@ sub marc8_to_utf8
             if ($code->is_combining())
             {
                 $combining .= $code->char_value();
-            }
+	    }
             else
             {
                 $utf8 .= $code->char_value() . $combining;
@@ -127,17 +202,22 @@ sub marc8_to_utf8
 
             $index += $char_size;
             next CHAR_LOOP;
-        }
+	}
 
         if (!$found)
         {
-            warn("no mapping found at position $index in $marc8 ".
+            warn(sprintf("no mapping found for [0x\%X] at position $index in $marc8 ".
                 "g0=".MARC::Charset::Constants::charset_name($G0) . " " .
-                "g1=".MARC::Charset::Constants::charset_name($G1));
+                "g1=".MARC::Charset::Constants::charset_name($G1), unpack('C',substr($marc8,$index,1))));
             if (!$ignore_errors)
             {
                 reset_charsets();
                 return;
+            }
+            if ($_assume)
+            {
+                reset_charsets();
+                return NFC(decode($_assume => $marc8));
             }
             $index += 1;
         }
@@ -163,12 +243,19 @@ parameter:
 
     my $marc8 = utf8_to_marc8($utf8, 'ignore-errors');
 
+  or
+  
+    MARC::Charset->ignore_errors(1);
+    my $utf8 = marc8_to_utf8($marc8);
+
 =cut
 
 sub utf8_to_marc8
 {
     my ($utf8, $ignore_errors) = @_;
     reset_charsets();
+
+    $ignore_errors = $_ignore_errors if (!defined($ignore_errors));
 
     # decompose combined characters
     $utf8 = NFD($utf8);
@@ -334,22 +421,22 @@ sub _process_escape
     }
 
     elsif ( $esc_char_1 eq MULTI_G0_A ) {
-        $G0 = $esc_char_2;
+	$G0 = $esc_char_2;
         return $left+3;
     }
 
     elsif ($esc_chars eq MULTI_G0_B 
         and ($left+3 < $right)) 
     {
-        $G0 = substr($$str_ref, $left+3, 1);
-        return $left+4;
+	$G0 = substr($$str_ref, $left+3, 1);
+	return $left+4;
     }
 
     elsif (($esc_chars eq MULTI_G1_A or $esc_chars eq MULTI_G1_B)
         and ($left + 3 < $right)) 
     {
-        $G1 = substr($$str_ref, $left+3, 1);
-        return $left+4;
+	$G1 = substr($$str_ref, $left+3, 1);
+	return $left+4;
     }
 
     # we should never get here

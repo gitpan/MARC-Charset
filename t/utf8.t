@@ -22,35 +22,35 @@ is(
 is(
     utf8_to_marc8(chr(0x0628)),
     ESCAPE . SINGLE_G0_A . BASIC_ARABIC . chr(0x48) . 
-    ESCAPE . ASCII_DEFAULT,
+	ESCAPE . ASCII_DEFAULT,
     'Basic Arabic' 
 );
 
 is(
     utf8_to_marc8(chr(0x068D)),
     ESCAPE . SINGLE_G1_A . EXTENDED_ARABIC . chr(0xB9) . 
-    ESCAPE . SINGLE_G1_A . EXTENDED_LATIN,
+	ESCAPE . SINGLE_G1_A . EXTENDED_LATIN,
     'Extended Arabic'
 );
 
 is(
     utf8_to_marc8(chr(0x0440)),
     ESCAPE . SINGLE_G0_A . BASIC_CYRILLIC . chr(0x52) . 
-    ESCAPE . ASCII_DEFAULT,
+	ESCAPE . ASCII_DEFAULT,
     'Basic Cyrillic'
 );
 
 is(
     utf8_to_marc8(chr(0x0408)),
     ESCAPE . SINGLE_G1_A . EXTENDED_CYRILLIC . chr(0xE8) . 
-    ESCAPE . SINGLE_G1_A . EXTENDED_LATIN,
+	ESCAPE . SINGLE_G1_A . EXTENDED_LATIN,
     'Extended Cyrillic'
 );
 
 is(
     utf8_to_marc8(chr(0x0398)),
     ESCAPE . SINGLE_G0_A . BASIC_GREEK . chr(0x4B) . 
-    ESCAPE . ASCII_DEFAULT,
+	ESCAPE . ASCII_DEFAULT,
     'Greek'
 );
 
@@ -60,7 +60,7 @@ is(
 is(
     utf8_to_marc8(chr(0x05E0)),
     ESCAPE . SINGLE_G0_A . BASIC_HEBREW . chr(0x70) . 
-    ESCAPE . ASCII_DEFAULT,
+	ESCAPE . ASCII_DEFAULT,
     'Hebrew' 
 );
 
@@ -77,7 +77,7 @@ is(utf8_to_marc8(chr(0x2074)),
 is(
     utf8_to_marc8(chr(0x71AC)),
     ESCAPE . MULTI_G0_A . CJK . chr(0x21) . chr(0x49) . chr(0x7C) . 
-    ESCAPE . ASCII_DEFAULT, 
+	ESCAPE . ASCII_DEFAULT, 
     'East Asian'
 );
 
@@ -90,7 +90,8 @@ is(
 );
 
 is(
-    utf8_to_marc8('abc' . chr(0x0327) . chr(0x0300) . chr(0x0301) . 'def'),
+    utf8_to_marc8('abc' . chr(0x0327) . chr(0x0300) . chr(0x0301) 
+	. 'def'),
     'ab' . chr(0xF0) . chr(0xE1) . chr(0xE2) . 'cdef',
     'string with multiple interior combining characters'
 );
@@ -101,7 +102,7 @@ is(
 is(
     utf8_to_marc8(chr(0x043A)),
     ESCAPE . SINGLE_G0_A . BASIC_CYRILLIC . chr(0x4B) .
-    ESCAPE . ASCII_DEFAULT ,
+	ESCAPE . ASCII_DEFAULT ,
     'CYRILLIC SMALL LETTER KA'
 );
 
@@ -109,8 +110,8 @@ is(
 is(
     utf8_to_marc8(chr(0x05D0) . chr(0x043B)),
     ESCAPE . SINGLE_G0_A . BASIC_HEBREW . chr(0x60) .
-    ESCAPE . SINGLE_G0_A . BASIC_CYRILLIC . chr(0x4C) .
-    ESCAPE . ASCII_DEFAULT,
+	ESCAPE . SINGLE_G0_A . BASIC_CYRILLIC . chr(0x4C) .
+	ESCAPE . ASCII_DEFAULT,
     'string with multiple character sets'
 );
 
