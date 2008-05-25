@@ -11,7 +11,6 @@ WriteMakefile(
     ABSTRACT_FROM   => 'lib/MARC/Charset.pm',
     AUTHOR          => 'Ed Summers <ehs@pobox.com>',
     PMLIBDIRS       => ['lib'],
-    PREREQ_FATAL    => 1,
     PREREQ_PM       => {
                             'Test::More'            => 0, 
                             'XML::SAX'              => 0,
@@ -32,4 +31,5 @@ sub build_db
     print "compiling marc8/utf8 database, please be patient\n";
     my $compiler = MARC::Charset::Compiler->new();
     $compiler->compile('etc/codetables.xml');
+    $compiler->compile('etc/additional-iii-characters.xml');
 }
