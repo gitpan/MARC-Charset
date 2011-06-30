@@ -1,6 +1,6 @@
 package MARC::Charset;
 
-our $VERSION = '1.31';
+our $VERSION = '1.32';
 use strict;
 use warnings;
 
@@ -52,7 +52,7 @@ our $DEFAULT_G1 = EXTENDED_LATIN;
 =head2 ignore_errors()
 
 Tells MARC::Charset whether or not to ignore all encoding errors, and
-returns the current setting.  This is helepfuli if you have records that
+returns the current setting.  This is helpful if you have records that
 contain both MARC8 and UNICODE characters.
 
     my $ignore = MARC::Charset->ignore_errors();
@@ -227,6 +227,7 @@ sub marc8_to_utf8
 
     # return the utf8
     reset_charsets();
+    utf8::upgrade($utf8);
     return $utf8;
 }
 

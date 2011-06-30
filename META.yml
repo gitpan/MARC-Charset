@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               MARC-Charset
-version:            1.31
+version:            1.32
 abstract:           convert MARC-8 encoded strings to UTF-8
 author:
     - Ed Summers <ehs@pobox.com>
