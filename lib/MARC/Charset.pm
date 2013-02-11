@@ -1,8 +1,9 @@
 package MARC::Charset;
 
-our $VERSION = '1.33';
 use strict;
 use warnings;
+
+our $VERSION = '1.34';
 
 use base qw(Exporter);
 our @EXPORT_OK = qw(marc8_to_utf8 utf8_to_marc8);
@@ -75,7 +76,7 @@ sub ignore_errors {
 
 Tells MARC::Charset whether or not to assume UNICODE when an error is
 encountered in ignore_errors mode and returns the current setting.
-This is helepfuli if you have records that contain both MARC8 and UNICODE
+This is helpful if you have records that contain both MARC8 and UNICODE
 characters.
 
     my $setting = MARC::Charset->assume_unicode();
@@ -189,12 +190,24 @@ sub marc8_to_utf8
 
             # gobble up all combining characters for appending later
             # this is necessary because combinging characters precede
-            # the character they modifiy in MARC-8, whereas they follow
+            # the character they modify in MARC-8, whereas they follow
             # the character they modify in UTF-8.
             if ($code->is_combining())
             {
-                $combining .= $code->char_value();
-	    }
+                # If the current character is the right half of a MARC-8 
+                # ligature or double tilde, we don't want to include
+                # it in the UTF-8 output.  For the explanation, see
+                # http://lcweb2.loc.gov/diglib/codetables/45.html#Note1
+                # Note that if the MARC-8 string includes a right half
+                # without the corresponding left half, the right half will
+                # get dropped instead of being mapped to its UCS alternate.
+                # That's OK since including only one half of a double diacritic
+                # was presumably a mistake to begin with. 
+                unless (defined $code->marc_left_half())
+                {
+                    $combining .= $code->char_value();
+                }
+	        }
             else
             {
                 $utf8 .= $code->char_value() . $combining;
@@ -288,7 +301,22 @@ sub utf8_to_marc8
         if ($code->is_combining())
         {
             my $prev = chop($marc8);
+            if ($code->marc_left_half())
+            {
+                # don't add the MARC-8 right half character
+                # if it was already inserted when the double
+                # diacritic was converted from UTF-8
+                if ($code->marc_value() eq substr($marc8, -1, 1))
+                {
+                    $marc8 .= $prev;
+                    next;
+                } 
+            }
             $marc8 .= $code->marc_value() . $prev;
+            if ($code->marc_right_half())
+            {
+                $marc8 .= chr(hex($code->marc_right_half()));
+            }
             next;
         }
 
