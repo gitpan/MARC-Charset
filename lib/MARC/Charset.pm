@@ -3,7 +3,7 @@ package MARC::Charset;
 use strict;
 use warnings;
 
-our $VERSION = '1.34';
+our $VERSION = '1.35';
 
 use base qw(Exporter);
 our @EXPORT_OK = qw(marc8_to_utf8 utf8_to_marc8);
@@ -49,6 +49,73 @@ our $table = MARC::Charset::Table->new();
 # in case someone wants to set them
 our $DEFAULT_G0 = ASCII_DEFAULT; 
 our $DEFAULT_G1 = EXTENDED_LATIN;
+
+our %SPECIAL_DECOMPOSABLE = (
+    chr(0x01a0) => chr(0x01a0), # uppercase o-hook
+    chr(0x01af) => chr(0x01af), # uppercase u-hook
+    chr(0x01a1) => chr(0x01a1), # lowercase o-hook
+    chr(0x01b0) => chr(0x01b0), # lowercase u-hook
+    chr(0x1ef1) => chr(0x01b0) . chr(0x0323), # lowercase u-hook with dot below
+    chr(0x1ee9) => chr(0x01b0) . chr(0x0301), # lowercase u-hook with acute
+    # Arabic to not decompose
+    chr(0x0622) => chr(0x0622),
+    chr(0x0623) => chr(0x0623),
+    chr(0x0624) => chr(0x0624),
+    chr(0x0625) => chr(0x0625),
+    chr(0x0626) => chr(0x0626),
+    chr(0x0649) => chr(0x0649),
+    chr(0x0671) => chr(0x0671),
+    chr(0x06c0) => chr(0x06c0),
+    chr(0x06D3) => chr(0x06D3),
+    # Cyrillic to not decompose
+    chr(0x0439) => chr(0x0439),
+    chr(0x0419) => chr(0x0419),
+    chr(0x0453) => chr(0x0453),
+    chr(0x0451) => chr(0x0451),
+    chr(0x0457) => chr(0x0457),
+    chr(0x045C) => chr(0x045C),
+    chr(0x045E) => chr(0x045E),
+    chr(0x0403) => chr(0x0403),
+    chr(0x0401) => chr(0x0401),
+    chr(0x0407) => chr(0x0407),
+    chr(0x040C) => chr(0x040C),
+    chr(0x040E) => chr(0x040E),
+    # Katakana to not decompose
+    chr(0x309B) => chr(0x309B),
+    chr(0x309C) => chr(0x309C),
+    chr(0x30AC) => chr(0x30AC),
+    chr(0x30AE) => chr(0x30AE),
+    chr(0x30B0) => chr(0x30B0),
+    chr(0x30B2) => chr(0x30B2),
+    chr(0x30B4) => chr(0x30B4),
+    chr(0x30B6) => chr(0x30B6),
+    chr(0x30B8) => chr(0x30B8),
+    chr(0x30BA) => chr(0x30BA),
+    chr(0x30BC) => chr(0x30BC),
+    chr(0x30BE) => chr(0x30BE),
+    chr(0x30C0) => chr(0x30C0),
+    chr(0x30C2) => chr(0x30C2),
+    chr(0x30C5) => chr(0x30C5),
+    chr(0x30C7) => chr(0x30C7),
+    chr(0x30C9) => chr(0x30C9),
+    chr(0x30D0) => chr(0x30D0),
+    chr(0x30D1) => chr(0x30D1),
+    chr(0x30D3) => chr(0x30D3),
+    chr(0x30D4) => chr(0x30D4),
+    chr(0x30D6) => chr(0x30D6),
+    chr(0x30D7) => chr(0x30D7),
+    chr(0x30D9) => chr(0x30D9),
+    chr(0x30DA) => chr(0x30DA),
+    chr(0x30DC) => chr(0x30DC),
+    chr(0x30DD) => chr(0x30DD),
+    chr(0x30F4) => chr(0x30F4),
+    chr(0x30F7) => chr(0x30F7),
+    chr(0x30F8) => chr(0x30F8),
+    chr(0x30F9) => chr(0x30F9),
+    chr(0x30FA) => chr(0x30FA),
+    chr(0x30FE) => chr(0x30FE),
+    chr(0x30FF) => chr(0x30FF),
+);
 
 =head2 ignore_errors()
 
@@ -181,8 +248,26 @@ sub marc8_to_utf8
             # extract the next code point to examine
 	    my $chunk = substr($marc8, $index, $char_size);
 
-            # look up the character to see if it's in our mapping 
-            my $code = $table->lookup_by_marc8($charset, $chunk);
+            my $code;
+            if ($char_size == 1) {
+                my $codepoint = ord($chunk);
+                if ($codepoint >= 0x21 && $codepoint <= 0x7e) {
+                    # character is G0
+                    $code = $table->lookup_by_marc8($G0, $chunk);
+                } elsif ($codepoint >= 0xa1 && $codepoint <= 0xfe) {
+                    # character is G1, map it to G0 before atttempting lookup
+                    $code = $table->lookup_by_marc8($G1, chr($codepoint - 128));
+                } elsif ($codepoint >= 0x88 && $codepoint <= 0x8e) {
+                    # in the C1 range used by MARC8
+                    $code = $table->lookup_by_marc8(EXTENDED_LATIN, $chunk);
+                } elsif ($codepoint >= 0x1b && $codepoint <= 0x1f) {
+                    # in the C0 range used by MARC8
+                    $code = $table->lookup_by_marc8(BASIC_LATIN, $chunk);
+                }
+            } else {
+                # EACC doesn't need G0/G1 conversion
+                $code = $table->lookup_by_marc8($charset, $chunk);
+            }
 
             # try the next character set if no mapping was found
             next CHARSET_LOOP if ! $code;
@@ -273,7 +358,10 @@ sub utf8_to_marc8
     $ignore_errors = $_ignore_errors if (!defined($ignore_errors));
 
     # decompose combined characters
-    $utf8 = NFD($utf8);
+    $utf8 = join('', 
+        map { exists $SPECIAL_DECOMPOSABLE{$_} ? $SPECIAL_DECOMPOSABLE{$_} : NFD($_) }
+        split //, $utf8
+    );
 
     my $len = length($utf8);
     my $marc8 = '';
